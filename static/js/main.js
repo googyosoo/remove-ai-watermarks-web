@@ -257,7 +257,7 @@ document.addEventListener('DOMContentLoaded', () => {
         formData.append('humanize', parseFloat(humanize.value));
 
         try {
-            const response = await fetch('/process', {
+            const response = await fetch('https://remove-ai-watermarks-web.onrender.com/process', {
                 method: 'POST',
                 body: formData
             });
