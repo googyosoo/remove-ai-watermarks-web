@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Watermark Stripper — Minimal & Edge</title>
+    <meta name="description" content="AI 워터마크 스트리퍼(Remover) - 인공지능 이미지에 포함된 가시적 워터마크(Gemini Sparkle 등), 보이지 않는 워터마크(SynthID, StableSignature 등), 그리고 C2PA 출처 메타데이터를 정밀하고 화질 손실 없이 소거하는 프리미엄 오프라인 세척 웹 서비스입니다.">
+    <!-- Google Fonts: Outfit & Noto Sans KR -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Outfit:wght@300;400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- CSS 스타일 시트 연결 -->
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <!-- 배경 글로우 서클 -->
+    <div class="bg-glow circle-1"></div>
+    <div class="bg-glow circle-2"></div>
+
+    <div class="container">
+        <!-- 헤더 영역 -->
+        <header class="app-header">
+            <div class="brand">
+                <span class="badge">PRO VERSION</span>
+                <h1>AI Watermark <span>Stripper</span></h1>
+                <p class="subtitle">인공지능 이미지에 박힌 가시적/비가시적 워터마크와 Provenance 메타데이터를 정교하게 복원 및 소거합니다.</p>
+            </div>
+        </header>
+
+        <main class="app-layout">
+            <!-- 좌측: 컨트롤 섹션 -->
+            <section class="left-panel">
+                <!-- 드래그 앤 드롭 업로더 -->
+                <div class="glass-card upload-card" id="dropzone">
+                    <input type="file" id="fileInput" accept="image/*" style="display: none;">
+                    <div class="upload-content" id="uploadPrompt">
+                        <div class="upload-icon">
+                            <i class="fa-solid fa-cloud-arrow-up"></i>
+                        </div>
+                        <h3>이미지 드래그 & 드롭</h3>
+                        <p>또는 클릭하여 파일 브라우저 열기</p>
+                        <span class="file-limits">PNG, JPG, WEBP, AVIF 지원 (최대 15MB)</span>
+                    </div>
+                    <div class="preview-container" id="previewContainer" style="display: none;">
+                        <img id="uploadPreview" src="" alt="업로드 프리뷰">
+                        <button type="button" class="btn-remove-file" id="btnRemoveFile">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 옵션 설정 패널 -->
+                <div class="glass-card control-card">
+                    <h2 class="section-title"><i class="fa-solid fa-sliders"></i> 처리 옵션 구성</h2>
+                    
+                    <form id="processForm">
+                        <!-- Option 1: 보이는 워터마크 -->
+                        <div class="option-item">
+                            <div class="option-header">
+                                <label class="switch-container">
+                                    <input type="checkbox" id="removeVisible" name="remove_visible" checked>
+                                    <span class="switch-slider"></span>
+                                </label>
+                                <div class="option-label">
+                                    <h4>가시적 워터마크 소거</h4>
+                                    <p>Gemini Sparkle 등 우측 하단 로고 복원</p>
+                                </div>
+                            </div>
+                            <div class="option-details collapsible" id="visibleDetails">
+                                <div class="range-container">
+                                    <div class="range-label">
+                                        <span>경계면 인페인팅 강도</span>
+                                        <span id="visibleStrengthVal">85%</span>
+                                    </div>
+                                    <input type="range" name="visible_strength" min="0" max="1" step="0.05" value="0.85" id="visibleStrength">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Option 2: 메타데이터 소거 -->
+                        <div class="option-item">
+                            <div class="option-header">
+                                <label class="switch-container">
+                                    <input type="checkbox" id="removeMetadata" name="remove_metadata" checked>
+                                    <span class="switch-slider"></span>
+                                </label>
+                                <div class="option-label">
+                                    <h4>출처 메타데이터 제거</h4>
+                                    <p>C2PA Provenance, EXIF AI 태그 완전 삭제</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Option 3: 보이지 않는 워터마크 -->
+                        <div class="option-item">
+                            <div class="option-header">
+                                <label class="switch-container">
+                                    <input type="checkbox" id="removeInvisible" name="remove_invisible">
+                                    <span class="switch-slider"></span>
+                                </label>
+                                <div class="option-label">
+                                    <h4>비가시적 워터마크 재생성</h4>
+                                    <p>SynthID 등 픽셀 노이즈 확산 복구</p>
+                                </div>
+                            </div>
+                            <div class="option-details collapsible" id="invisibleDetails" style="display: none;">
+                                <div class="alert-box warning">
+                                    <i class="fa-solid fa-triangle-exclamation"></i>
+                                    <span>비가시적 워터마크 소거는 SDXL 딥러닝 모델 구동으로 고사양 GPU가 권장되며, 수십 초의 시간이 소요될 수 있습니다.</span>
+                                </div>
+                                <div class="range-container">
+                                    <div class="range-label">
+                                        <span>재확산 노이즈 주입 강도</span>
+                                        <span id="invisibleStrengthVal">4%</span>
+                                    </div>
+                                    <input type="range" name="invisible_strength" min="0.01" max="0.15" step="0.01" value="0.04" id="invisibleStrength">
+                                </div>
+                                <div class="toggle-suboption">
+                                    <label class="checkbox-container">
+                                        <input type="checkbox" name="protect_faces" checked>
+                                        <span class="checkmark"></span>
+                                        인물 얼굴 보호 (YOLOv8 & 블렌딩 활성화)
+                                    </label>
+                                </div>
+                                <div class="range-container mt-2">
+                                    <div class="range-label">
+                                        <span>아날로그 필름 그레인 합성</span>
+                                        <span id="humanizeVal">0%</span>
+                                    </div>
+                                    <input type="range" name="humanize" min="0.0" max="0.3" step="0.05" value="0.0" id="humanize">
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn-submit" id="btnSubmit" disabled>
+                            <span class="btn-text"><i class="fa-solid fa-wand-magic-sparkles"></i> 복원 프로세스 시작</span>
+                            <div class="spinner" style="display: none;"></div>
+                        </button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- 우측: 결과 & 뷰어 섹션 -->
+            <section class="right-panel">
+                <!-- Before / After 대화형 슬라이더 카드 -->
+                <div class="glass-card viewer-card">
+                    <div class="viewer-header">
+                        <h2 class="section-title"><i class="fa-solid fa-eye"></i> 워터마크 제거 캔버스</h2>
+                        <div class="viewer-actions">
+                            <a href="#" class="btn-download disabled" id="btnDownload" download="restored_image.png">
+                                <i class="fa-solid fa-download"></i> 결과물 저장
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- 드래그 슬라이더 래퍼 -->
+                    <div class="slider-wrapper" id="sliderWrapper">
+                        <!-- Before (원본 이미지) -->
+                        <div class="slide-img before-img">
+                            <img id="imgBefore" src="/static/uploads/demo_before.png" alt="제거 전 원본" onerror="this.src='https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1000&q=80'">
+                            <span class="image-label before-label">ORIGINAL</span>
+                        </div>
+                        
+                        <!-- After (결과 이미지 - 리사이즈 영역) -->
+                        <div class="slide-img after-img" id="afterImgContainer">
+                            <img id="imgAfter" src="/static/results/demo_after.png" alt="제거 후 결과" onerror="this.src='https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1000&q=80'">
+                            <span class="image-label after-label">CLEANED</span>
+                        </div>
+
+                        <!-- 드래그 핸들 바 -->
+                        <div class="slider-handle" id="sliderHandle">
+                            <div class="handle-line"></div>
+                            <div class="handle-button">
+                                <i class="fa-solid fa-arrows-left-right"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 터미널 콘솔 로그 출력창 -->
+                <div class="glass-card console-card">
+                    <div class="console-header">
+                        <div class="dots">
+                            <span class="c-dot red"></span>
+                            <span class="c-dot yellow"></span>
+                            <span class="c-dot green"></span>
+                        </div>
+                        <span class="console-title">PROCESS TERMINAL LOG</span>
+                        <button type="button" class="btn-clear-console" id="btnClearConsole">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </div>
+                    <div class="console-body" id="consoleBody">
+                        <div class="log-row info">&gt; AI Watermark Stripper 시스템 대기 중...</div>
+                        <div class="log-row info">&gt; 이미지를 드롭하고 복원 프로세스를 시작하세요.</div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- 기술 백그라운드 설명 카드 (Full Width 3단 가로 나열 배치) -->
+        <div class="glass-card tech-desc-card">
+            <h2 class="section-title"><i class="fa-solid fa-circle-info"></i> AI 워터마크 기술 개요</h2>
+            <div class="tech-grid">
+                <div class="tech-item">
+                    <h5><span class="dot visible-dot"></span> 가시적 워터마크 (Visible)</h5>
+                    <p>구글 Gemini가 생성한 이미지 우측 하단에 적용되는 <strong>'Sparkle' 로고</strong>입니다. 역 알파 블렌딩(Reverse Alpha Blending) 연산으로 로고 뒤의 원본 화소를 직접 추출한 후, 미세 경계면 오차를 빠른 이웃 픽셀 인페인팅 기법으로 매끄럽게 보정합니다.</p>
+                </div>
+                <div class="tech-item">
+                    <h5><span class="dot metadata-dot"></span> 출처 메타데이터 (C2PA)</h5>
+                    <p>이미지 내부 컨테이너(ISOBMFF 등)에 무손실 바이너리 형태로 삽입되는 <strong>디지털 서명 및 편집 이력</strong>입니다. 파일 본래의 픽셀 손상 없이 C2PA 매니페스트 박스 및 EXIF의 AI 생성 플래그 태그를 완벽하게 오프라인에서 소거합니다.</p>
+                </div>
+                <div class="tech-item">
+                    <h5><span class="dot invisible-dot"></span> 비가시적 워터마크 (SynthID)</h5>
+                    <p>사람 눈에는 보이지 않으나 AI 판독기에는 나타나는 <strong>미세 주파수 패턴</strong>입니다. SDXL 확산 모델(Stable Diffusion XL)의 잠재 공간(Latent Space) 인코딩 후, 정밀 제어된 임계 노이즈를 주입하고 재확산(Denoising) 재생성하여 패턴을 물리적으로 지워냅니다.</p>
+                </div>
+            </div>
+        </div>
+
+        <footer class="app-footer">
+            <p>© 2026 AI Watermark Stripper Project. Designed with Minimal & Edge aesthetics.</p>
+        </footer>
+    </div>
+
+    <!-- JS 연결 -->
+    <script src="/static/js/main.js"></script>
+</body>
+</html>

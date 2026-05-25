@@ -1,0 +1,8 @@
+.venv/
+static/uploads/*
+static/results/*
+!static/uploads/demo_before.png
+!static/results/demo_after.png
+__pycache__/
+*.pyc
+.DS_Store
